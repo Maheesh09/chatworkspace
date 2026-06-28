@@ -1,4 +1,4 @@
 package com.dca.chat.dto;
 
-public record ChatMessageRequest(String sender, String content) {
+public record ChatMessageRequest(Long channelId, Long senderId, String content) {
 }
