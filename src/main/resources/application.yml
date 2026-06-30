@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:classpath:application-local.yml
+
   datasource:
     url: jdbc:postgresql://localhost:5433/chatdb
     username: chat_user
@@ -13,5 +16,20 @@ spring:
       hibernate:
         format_sql: true
 
-  config:
-    import: optional:classpath:application-local.yml
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: chat-service-dev
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: latest
+      properties:
+        spring.json.trusted.packages: "com.dca.chat.dto"
+
+app:
+  kafka:
+    topics:
+      chat-messages: chat.messages
