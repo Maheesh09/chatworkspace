@@ -7,6 +7,7 @@ import com.dca.chat.dto.ChatMessageEvent;
 import com.dca.chat.dto.ChatMessageRequest;
 import com.dca.chat.exception.ChannelNotFoundException;
 import com.dca.chat.exception.UserNotFoundException;
+import com.dca.chat.messaging.publisher.MessagePublisher;
 import com.dca.chat.repository.ChannelRepository;
 import com.dca.chat.repository.MessageRepository;
 import com.dca.chat.repository.UserRepository;
@@ -27,22 +28,22 @@ public class ChatService {
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final MessagePublisher messagePublisher;
 
     public ChatService(ChannelRepository channelRepository,
                        UserRepository userRepository,
                        MessageRepository messageRepository,
-                       SimpMessagingTemplate messagingTemplate) {
+                       MessagePublisher messagePublisher) {
         this.channelRepository = channelRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
-        this.messagingTemplate = messagingTemplate;
+        this.messagePublisher = messagePublisher;
     }
 
     public void processIncomingMessage(ChatMessageRequest request, Principal principal) {
         Long senderId = ((StompPrincipal) principal).getUserId();
         Message savedMessage = saveMessage(request, senderId);
-        broadcastMessage(savedMessage);
+        publishMessage(savedMessage);
     }
 
     private Message saveMessage(ChatMessageRequest request, Long senderId) {
@@ -55,7 +56,7 @@ public class ChatService {
         return messageRepository.save(message);
     }
 
-    private void broadcastMessage(Message message) {
+    private void publishMessage(Message message) {
         ChatMessageEvent event = new ChatMessageEvent(
                 message.getId(),
                 message.getChannel().getId(),
@@ -63,10 +64,7 @@ public class ChatService {
                 message.getContent(),
                 message.getCreatedAt()
         );
-
-        String destination = String.format(CHANNEL_TOPIC_TEMPLATE, event.channelId());
-        messagingTemplate.convertAndSend(destination, event);
-
-        log.info("Message {} saved and broadcast to channel {}", event.id(), event.channelId());
+        messagePublisher.publish(event);
+        log.info("Message {} published to Kafka for channel {}", event.id(), event.channelId());
     }
 }
