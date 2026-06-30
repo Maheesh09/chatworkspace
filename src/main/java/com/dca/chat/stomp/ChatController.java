@@ -10,10 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
 import java.util.stream.Collectors;
 
 @Controller
@@ -28,8 +29,8 @@ public class ChatController {
     }
 
     @MessageMapping("chat.send")
-    public void handleIncomingMessage(@Valid ChatMessageRequest request) {
-        chatService.processIncomingMessage(request);
+    public void handleIncomingMessage(@Valid ChatMessageRequest request, Principal principal) {
+        chatService.processIncomingMessage(request, principal);
     }
 
     @MessageExceptionHandler

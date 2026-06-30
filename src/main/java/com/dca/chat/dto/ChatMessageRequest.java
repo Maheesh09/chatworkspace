@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record ChatMessageRequest(
         @NotNull Long channelId,
-        @NotNull Long senderId,
         @NotBlank @Size(max = 2000) String content
 ) {
 }
