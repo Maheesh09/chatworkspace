@@ -29,15 +29,18 @@ public class ChatService {
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final MessagePublisher messagePublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatService(ChannelRepository channelRepository,
                        UserRepository userRepository,
                        MessageRepository messageRepository,
-                       MessagePublisher messagePublisher) {
+                       MessagePublisher messagePublisher,
+                       SimpMessagingTemplate messagingTemplate) {
         this.channelRepository = channelRepository;
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.messagePublisher = messagePublisher;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public void processIncomingMessage(ChatMessageRequest request, Principal principal) {
@@ -66,5 +69,11 @@ public class ChatService {
         );
         messagePublisher.publish(event);
         log.info("Message {} published to Kafka for channel {}", event.id(), event.channelId());
+    }
+
+    public void broadcastToSubscribers(ChatMessageEvent event) {
+        String destination = String.format(CHANNEL_TOPIC_TEMPLATE, event.channelId());
+        messagingTemplate.convertAndSend(destination, event);
+        log.info("Message {} broadcast to STOMP destination {}", event.id(), destination);
     }
 }
