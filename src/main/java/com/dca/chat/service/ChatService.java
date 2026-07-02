@@ -5,6 +5,7 @@ import com.dca.chat.domain.entity.Message;
 import com.dca.chat.domain.entity.User;
 import com.dca.chat.dto.ChatMessageEvent;
 import com.dca.chat.dto.ChatMessageRequest;
+import com.dca.chat.dto.MessageResponse;
 import com.dca.chat.exception.ChannelNotFoundException;
 import com.dca.chat.exception.UserNotFoundException;
 import com.dca.chat.messaging.publisher.MessagePublisher;
@@ -14,8 +15,11 @@ import com.dca.chat.repository.UserRepository;
 import com.dca.chat.security.StompPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
 
@@ -75,5 +79,17 @@ public class ChatService {
         String destination = String.format(CHANNEL_TOPIC_TEMPLATE, event.channelId());
         messagingTemplate.convertAndSend(destination, event);
         log.info("Message {} broadcast to STOMP destination {}", event.id(), destination);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MessageResponse> getChannelHistory(Long channelId, Pageable pageable) {
+        return messageRepository.findByChannelIdWithSender(channelId, pageable)
+                .map(message -> new MessageResponse(
+                        message.getId(),
+                        message.getChannel().getId(),
+                        message.getSender().getId(),
+                        message.getContent(),
+                        message.getCreatedAt()
+                ));
     }
 }
